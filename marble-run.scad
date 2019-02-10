@@ -1,17 +1,50 @@
+o= .001;
+oo= .000000000000001;
+
 block_side=45;
 block_height=22.5;
 chute_rad= 10;
 chute_depth= 12.5;
 chute_z= block_height-chute_depth+chute_rad;
-o= .001;
-oo= .000000000000001;
 curve_step= 4;
+
 flat_mag_rad= 6.4/2;
 flat_mag_thick= 1.62;
-magchute_rad= 10;
+magchute_mag_veneer= 0.2;
+
 magchute_w= 28;
 magchute_h= 14;
-magchute_upper_rad= magchute_w/5 - sqrt(-(magchute_w*magchute_w) / 20 + magchute_rad*magchute_rad/5 + magchute_w*magchute_w/25);
+magchute_upper_rad= magchute_w/5 - sqrt(-(magchute_w*magchute_w) / 20 + chute_rad*chute_rad/5 + magchute_w*magchute_w/25);
+
+wallchute_face_z= chute_rad*.6;
+wallchute_face_dz= chute_rad*2;
+wallchute_face_dx= 4;
+wallchute_base_dx= wallchute_face_dx + chute_rad*1.7;
+wallchute_base_dz= 6;
+wallchute_cyl_x= wallchute_face_dx+chute_rad;
+wallchute_cyl_z= 2+chute_rad;
+wallchute_e1_angle= -acos((wallchute_base_dx - chute_rad - wallchute_face_dx)/chute_rad);
+//((wallchute_base_dx - (chute_rad + wallchute_face_dx)) / chute_rad);
+
+//(wallchute_base_dx - (chute_rad + wallchute_face_dx)) / chute_rad
+//(wallchute_face_dx + chute_rad*1.7 - (chute_rad + wallchute_face_dx)) / chute_rad
+//(wallchute_face_dx + chute_rad + chute_rad*.7 - chute_rad - wallchute_face_dx)/chute_rad
+
+wallchute_e1_r= .5;
+wallchute_e1_x= wallchute_cyl_x + cos(wallchute_e1_angle)*chute_rad + cos(wallchute_e1_angle)*wallchute_e1_r;
+wallchute_e1_z= wallchute_cyl_z + sin(wallchute_e1_angle)*chute_rad + sin(wallchute_e1_angle)*wallchute_e1_r;
+wallchute_e2_r= .75;
+wallchute_e2_x= wallchute_e1_x + wallchute_e1_r - wallchute_e2_r;
+wallchute_e2_z= wallchute_e2_r;
+wallchute_e3_r=.5;
+wallchute_e3_x= wallchute_e3_r;
+wallchute_e3_z= wallchute_e3_r;
+wallchute_e4_r= .5;
+wallchute_e4_x= wallchute_e4_r;
+wallchute_e4_z= wallchute_face_dz - wallchute_e4_r;
+wallchute_e5_r= .5;
+wallchute_e5_x= wallchute_face_dx - wallchute_e5_r;
+wallchute_e5_z= wallchute_face_dz - wallchute_e5_r;
 
 //(w/2 - 2*ur)^2 + ur^2 = r^2
 //(w/2)^2 + 2 * (-w*ur) + 4*ur^2 + ur^2 = r^2
@@ -22,7 +55,6 @@ magchute_upper_rad= magchute_w/5 - sqrt(-(magchute_w*magchute_w) / 20 + magchute
 //ur - w/5 = sqrt(r^2 / 5 - w^2/20 + w^2/25)
 //ur = w/5 + sqrt(r^2 / 5 - w^2/20 + w^2/25);
 
-magchute_mag_veneer= 0.2;
 
 module curl_270() {
 	$fn=50;
@@ -150,13 +182,13 @@ module magchute_straight(len=magchute_w*2) {
 				cube([ magchute_w, len, magchute_h-magchute_upper_rad ]);
 				translate([ magchute_w/2, -o, magchute_h ])
 					rotate(-90, [1,0,0])
-						cylinder(r=magchute_rad, h=len+o*2);
+						cylinder(r=chute_rad, h=len+o*2);
 				translate([ magchute_w/2, 0, 0 ]) magchute_magslots(1);
 				translate([ magchute_w/2, len, 0 ]) magchute_magslots(-1);
 			}
 			translate([ magchute_w/2, -o, magchute_h*.55 ])
 				rotate(-90, [1,0,0])
-					cylinder(r=magchute_rad*1.47, h=len+o*2);
+					cylinder(r=chute_rad*1.47, h=len+o*2);
 		}
 		translate([ magchute_upper_rad, 0, magchute_h-magchute_upper_rad ])
 			rotate(-90, [1,0,0]) cylinder(r=magchute_upper_rad, h=len);
@@ -165,4 +197,60 @@ module magchute_straight(len=magchute_w*2) {
 	}
 }
 
-magchute_straight();
+//magchute_straight();
+
+module wallchute_magslot() {
+	$fn= 6;
+	hull() {
+		translate([ magchute_mag_veneer, 0, wallchute_face_dz - flat_mag_rad*1.5 ])
+			rotate(90, [0,1,0]) cylinder(r=flat_mag_rad, h=flat_mag_thick);
+		translate([ magchute_mag_veneer, 0, wallchute_face_dz + flat_mag_rad*1.5 ])
+			rotate(90, [0,1,0]) cylinder(r=flat_mag_rad, h=flat_mag_thick);
+	}
+}
+
+module wallchute_straight(len=40) {
+	difference() {
+		union() {
+			$fn= 100;
+			// back wall
+			translate([ 0, 0, wallchute_e3_z ])
+				cube([ wallchute_face_dx, len, wallchute_face_dz - wallchute_e3_z - wallchute_e4_r ]);
+			// fill corner up to cylinder cutout
+			translate([ 0, 0, wallchute_e3_z ])
+				cube([ wallchute_cyl_x, len, wallchute_cyl_z - wallchute_e3_z ]);
+			// fill base
+			translate([ 0, 0, wallchute_e3_z ])
+				cube([ wallchute_e1_x, len, wallchute_e1_z - wallchute_e3_z - sin(wallchute_e1_angle)*wallchute_e1_r ]);
+			// top
+			hull() {
+				translate([ wallchute_e4_x, 0, wallchute_e4_z ])
+					rotate(-90, [1,0,0]) cylinder(r=wallchute_e4_r, h=len);
+				translate([ wallchute_e5_x, 0, wallchute_e5_z ])
+					rotate(-90, [1,0,0]) cylinder(r=wallchute_e5_r, h=len);
+			}
+			// front
+			hull() {
+				translate([ wallchute_e1_x, 0, wallchute_e1_z ])
+					rotate(-90, [1,0,0]) cylinder(r=wallchute_e1_r, h=len);
+				translate([ wallchute_e2_x, 0, wallchute_e2_z ])
+					rotate(-90, [1,0,0]) cylinder(r=wallchute_e2_r, h=len);
+			}
+			// base
+			hull() {
+				translate([ wallchute_e2_x, 0, wallchute_e2_z ])
+					rotate(-90, [1,0,0]) cylinder(r=wallchute_e2_r, h=len);
+				translate([ wallchute_e3_x, 0, wallchute_e3_z ])
+					rotate(-90, [1,0,0]) cylinder(r=wallchute_e3_r, h=len);
+			}
+		}
+		$fn= 360;
+		translate([ wallchute_cyl_x, -o, wallchute_cyl_z ])
+			rotate(-90, [1,0,0]) cylinder(r=chute_rad, h=len+o*2);
+		// cutouts for magnets
+		translate([ 0, 4, 0 ]) wallchute_magslot();
+		translate([ 0, len-4, 0 ]) wallchute_magslot();
+	}
+}
+
+wallchute_straight(len=120);
