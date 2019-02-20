@@ -209,48 +209,77 @@ module wallchute_magslot() {
 	}
 }
 
-module wallchute_straight(len=40) {
+module wallchute_outline() {
 	difference() {
 		union() {
 			$fn= 100;
 			// back wall
-			translate([ 0, 0, wallchute_e3_z ])
-				cube([ wallchute_face_dx, len, wallchute_face_dz - wallchute_e3_z - wallchute_e4_r ]);
+			translate([ 0, wallchute_e3_z ])
+				square([ wallchute_face_dx, wallchute_face_dz - wallchute_e3_z - wallchute_e4_r ]);
 			// fill corner up to cylinder cutout
-			translate([ 0, 0, wallchute_e3_z ])
-				cube([ wallchute_cyl_x, len, wallchute_cyl_z - wallchute_e3_z ]);
+			translate([ 0, wallchute_e3_z ])
+				square([ wallchute_cyl_x, wallchute_cyl_z - wallchute_e3_z ]);
 			// fill base
-			translate([ 0, 0, wallchute_e3_z ])
-				cube([ wallchute_e1_x, len, wallchute_e1_z - wallchute_e3_z - sin(wallchute_e1_angle)*wallchute_e1_r ]);
+			translate([ 0, wallchute_e3_z ])
+				square([ wallchute_e1_x, wallchute_e1_z - wallchute_e3_z - sin(wallchute_e1_angle)*wallchute_e1_r ]);
 			// top
 			hull() {
-				translate([ wallchute_e4_x, 0, wallchute_e4_z ])
-					rotate(-90, [1,0,0]) cylinder(r=wallchute_e4_r, h=len);
-				translate([ wallchute_e5_x, 0, wallchute_e5_z ])
-					rotate(-90, [1,0,0]) cylinder(r=wallchute_e5_r, h=len);
+				translate([ wallchute_e4_x, wallchute_e4_z ])
+					circle(r=wallchute_e4_r);
+				translate([ wallchute_e5_x, wallchute_e5_z ])
+					circle(r=wallchute_e5_r);
 			}
 			// front
 			hull() {
-				translate([ wallchute_e1_x, 0, wallchute_e1_z ])
-					rotate(-90, [1,0,0]) cylinder(r=wallchute_e1_r, h=len);
-				translate([ wallchute_e2_x, 0, wallchute_e2_z ])
-					rotate(-90, [1,0,0]) cylinder(r=wallchute_e2_r, h=len);
+				translate([ wallchute_e1_x, wallchute_e1_z ])
+					circle(r=wallchute_e1_r);
+				translate([ wallchute_e2_x, wallchute_e2_z ])
+					circle(r=wallchute_e2_r);
 			}
 			// base
 			hull() {
-				translate([ wallchute_e2_x, 0, wallchute_e2_z ])
-					rotate(-90, [1,0,0]) cylinder(r=wallchute_e2_r, h=len);
-				translate([ wallchute_e3_x, 0, wallchute_e3_z ])
-					rotate(-90, [1,0,0]) cylinder(r=wallchute_e3_r, h=len);
+				translate([ wallchute_e2_x, wallchute_e2_z ])
+					circle(r=wallchute_e2_r);
+				translate([ wallchute_e3_x, wallchute_e3_z ])
+					circle(r=wallchute_e3_r);
 			}
 		}
 		$fn= 360;
-		translate([ wallchute_cyl_x, -o, wallchute_cyl_z ])
-			rotate(-90, [1,0,0]) cylinder(r=chute_rad, h=len+o*2);
-		// cutouts for magnets
-		translate([ 0, 4, 0 ]) wallchute_magslot();
-		translate([ 0, len-4, 0 ]) wallchute_magslot();
+		translate([ wallchute_cyl_x, wallchute_cyl_z ])
+			circle(r=chute_rad);
 	}
 }
 
-wallchute_straight(len=120);
+module wallchute_straight(len=40) {
+	difference() {
+		extrude(convexity=4) {
+			translate([0,len,0]) rotate(90, [1,0,0]) wallchute_outline();
+			rotate(90, [1,0,0]) wallchute_outline();
+		}
+		// cutouts for magnets
+		translate([ 0, 10, 0 ]) wallchute_magslot();
+		translate([ 0, len-10, 0 ]) wallchute_magslot();
+	}
+}
+
+module wallchute_curve(rad=40, arc=30) {
+	difference() {
+		extrude(convexity=6) {
+			for (r=[0:1:arc], union=false) {
+				translate([0,rad]) rotate(-r, [1,0,0]) translate([0,-rad])
+					wallchute_outline();
+			}
+		}
+		// cutouts for magnets
+		translate([0,rad]) rotate(90-arc/2, [1,0,0]) //translate([0,-rad])
+			wallchute_magslot();
+	}
+}
+
+wallchute_curve();
+//extrude() for(t=[0:1:1], union=false) {
+//    rotate(x, [0,0,1]) {
+//        circle(r=10);
+//        //square([1,2]);
+//    }
+//}
