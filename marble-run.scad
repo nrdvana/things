@@ -8,8 +8,8 @@ chute_depth= 12.5;
 chute_z= block_height-chute_depth+chute_rad;
 curve_step= 4;
 
-flat_mag_rad= 6.4/2;
-flat_mag_thick= 1.62;
+flat_mag_rad= 4; //6.4/2;
+flat_mag_thick= 1.8; //1.62;
 magchute_mag_veneer= 0.2;
 
 magchute_w= 28;
@@ -276,10 +276,21 @@ module wallchute_curve(rad=40, arc=30) {
 	}
 }
 
-wallchute_curve();
-//extrude() for(t=[0:1:1], union=false) {
-//    rotate(x, [0,0,1]) {
-//        circle(r=10);
-//        //square([1,2]);
-//    }
-//}
+module wallchute_wave(len=160) {
+    dz=0;//len/10;
+    amplitude= 7;
+    difference() {
+        extrude(convexity=6) {
+            for (t=[1:1:len], union=false) {
+                translate([0,-t,t/len*dz + amplitude*cos(t/len*360*2)])
+                    rotate(90, [1,0,0]) wallchute_outline();
+            }
+        }
+        translate([ 0, -10, 0 ]) wallchute_magslot();
+        translate([ 0, -len+10, 0 ]) wallchute_magslot();
+    }
+}
+
+//wallchute_curve();
+//wallchute_straight(len=160);
+wallchute_wave();
