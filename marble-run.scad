@@ -55,6 +55,11 @@ wallchute_e5_z= wallchute_face_dz - wallchute_e5_r;
 //ur - w/5 = sqrt(r^2 / 5 - w^2/20 + w^2/25)
 //ur = w/5 + sqrt(r^2 / 5 - w^2/20 + w^2/25);
 
+module corner_anchor(r=10) {
+    translate([ -r/2, -r/2, 0 ]) cube([ r, r, .2 ]);
+    translate([ -1.02*r/2, -1.02*r/2, .2 ]) cube([ 1.02*r, 1.02*r, .2 ]);
+    translate([ -.4*r/2, -.4*r/2, .4 ]) cube([ .4*r, .4*r, .2 ]);
+}
 
 module curl_270() {
 	$fn=50;
@@ -250,20 +255,27 @@ module wallchute_outline() {
 	}
 }
 
-module wallchute_straight(len=40) {
-	difference() {
+module wallchute_straight(len=40, anchor_at_0=true) {
+	rotate(-90, [0,1,0]) difference() {
 		extrude(convexity=4) {
 			translate([0,len,0]) rotate(90, [1,0,0]) wallchute_outline();
 			rotate(90, [1,0,0]) wallchute_outline();
 		}
 		// cutouts for magnets
-		translate([ 0, 10, 0 ]) wallchute_magslot();
-		translate([ 0, len-10, 0 ]) wallchute_magslot();
+		translate([ 0, len*.25, 0 ]) wallchute_magslot();
+		translate([ 0, len*.75, 0 ]) wallchute_magslot();
 	}
+    // hold down corners
+    if (anchor_at_0) {
+        corner_anchor();
+        translate([ -wallchute_base_dx, 0, 0 ]) corner_anchor();
+    }
+    translate([ 0, len, 0 ]) corner_anchor();
+    translate([ -wallchute_base_dx, len, 0 ]) corner_anchor();
 }
 
-module wallchute_curve(rad=40, arc=30) {
-	difference() {
+module wallchute_curve(rad=40, arc=30, anchor_at_0=true) {
+	rotate(-90, [0,1,0]) difference() {
 		extrude(convexity=6) {
 			for (r=[0:1:arc], union=false) {
 				translate([0,rad]) rotate(-r, [1,0,0]) translate([0,-rad])
@@ -274,23 +286,39 @@ module wallchute_curve(rad=40, arc=30) {
 		translate([0,rad]) rotate(90-arc/2, [1,0,0]) //translate([0,-rad])
 			wallchute_magslot();
 	}
+    // hold down corners
+    if (anchor_at_0)
+        corner_anchor();
+	translate([0,rad]) rotate(-arc, [0,0,1]) translate([0,-rad]) corner_anchor();
+    //translate([ -amplitude, -len, 0 ]) corner_anchor();
+	//translate([0,rad]) rotate(90-arc/2, [1,0,0]) //translate([0,-rad])
+    //translate([ -wallchute_base_dx-amplitude, -len, 0 ]) corner_anchor();
 }
 
-module wallchute_wave(len=160) {
-    dz=0;//len/10;
-    amplitude= 7;
-    difference() {
+module wallchute_wave(len=160, step=3, dz=0, amplitude=7) {
+    rotate(-90, [0,1,0]) difference() {
         extrude(convexity=6) {
-            for (t=[1:1:len], union=false) {
+            for (t=[0:step:len+o], union=false) {
                 translate([0,-t,t/len*dz + amplitude*cos(t/len*360*2)])
                     rotate(90, [1,0,0]) wallchute_outline();
             }
         }
-        translate([ 0, -10, 0 ]) wallchute_magslot();
-        translate([ 0, -len+10, 0 ]) wallchute_magslot();
+        translate([ 0, -len*.25, .25*dz + amplitude*cos(.25*360*2) ]) wallchute_magslot();
+        translate([ 0, -len*.75, .75*dz + amplitude*cos(.75*360*2) ]) wallchute_magslot();
     }
+    // hold down corners
+    translate([ -amplitude, 0, 0 ]) corner_anchor();
+    translate([ -wallchute_base_dx-amplitude, 0, 0 ]) corner_anchor();
+    translate([ -amplitude, -len, 0 ]) corner_anchor();
+    translate([ -wallchute_base_dx-amplitude, -len, 0 ]) corner_anchor();
+}
+
+module wallchute_straight_curve(arc=30, len=80) {
+    rotate(-90, [0,0,1]) wallchute_straight(len=len, anchor_at_0=false);
+    wallchute_curve(arc=arc, anchor_at_0=false);
 }
 
 //wallchute_curve();
 //wallchute_straight(len=160);
-wallchute_wave();
+//wallchute_wave(step=1);
+mirror([1,0,0]) wallchute_straight_curve();
