@@ -21,8 +21,10 @@ wallchute_face_dz= chute_rad*2;
 wallchute_face_dx= 4;
 wallchute_base_dx= wallchute_face_dx + chute_rad*1.7;
 wallchute_base_dz= 6;
+wallchute_base_thick= 2;
 wallchute_cyl_x= wallchute_face_dx+chute_rad;
-wallchute_cyl_z= 2+chute_rad;
+wallchute_cyl2_x= wallchute_face_dx+chute_rad*3;
+wallchute_cyl_z= wallchute_base_thick+chute_rad;
 wallchute_e1_angle= -acos((wallchute_base_dx - chute_rad - wallchute_face_dx)/chute_rad);
 //((wallchute_base_dx - (chute_rad + wallchute_face_dx)) / chute_rad);
 
@@ -36,7 +38,7 @@ wallchute_e1_z= wallchute_cyl_z + sin(wallchute_e1_angle)*chute_rad + sin(wallch
 wallchute_e2_r= .75;
 wallchute_e2_x= wallchute_e1_x + wallchute_e1_r - wallchute_e2_r;
 wallchute_e2_z= wallchute_e2_r;
-wallchute_e3_r=.5;
+wallchute_e3_r= .5;
 wallchute_e3_x= wallchute_e3_r;
 wallchute_e3_z= wallchute_e3_r;
 wallchute_e4_r= .5;
@@ -215,18 +217,12 @@ module wallchute_magslot() {
 }
 
 module wallchute_outline() {
+    $fn= 100;
 	difference() {
 		union() {
-			$fn= 100;
 			// back wall
 			translate([ 0, wallchute_e3_z ])
 				square([ wallchute_face_dx, wallchute_face_dz - wallchute_e3_z - wallchute_e4_r ]);
-			// fill corner up to cylinder cutout
-			translate([ 0, wallchute_e3_z ])
-				square([ wallchute_cyl_x, wallchute_cyl_z - wallchute_e3_z ]);
-			// fill base
-			translate([ 0, wallchute_e3_z ])
-				square([ wallchute_e1_x, wallchute_e1_z - wallchute_e3_z - sin(wallchute_e1_angle)*wallchute_e1_r ]);
 			// top
 			hull() {
 				translate([ wallchute_e4_x, wallchute_e4_z ])
@@ -234,6 +230,12 @@ module wallchute_outline() {
 				translate([ wallchute_e5_x, wallchute_e5_z ])
 					circle(r=wallchute_e5_r);
 			}
+			// fill corner up to cylinder cutout
+			translate([ 0, wallchute_e3_z ])
+				square([ wallchute_cyl_x, wallchute_cyl_z - wallchute_e3_z ]);
+			// fill base
+			translate([ 0, wallchute_e3_z ])
+				square([ wallchute_e1_x, wallchute_e1_z - wallchute_e3_z - sin(wallchute_e1_angle)*wallchute_e1_r ]);
 			// front
 			hull() {
 				translate([ wallchute_e1_x, wallchute_e1_z ])
@@ -249,9 +251,58 @@ module wallchute_outline() {
 					circle(r=wallchute_e3_r);
 			}
 		}
-		$fn= 360;
 		translate([ wallchute_cyl_x, wallchute_cyl_z ])
-			circle(r=chute_rad);
+			circle(r=chute_rad, $fn=360);
+	}
+}
+
+module wallchute_base_outline(chute_center_x=wallchute_cyl_x, support_x= 0, chute_outer_arc=-wallchute_e1_angle, chute_inner_arc=-wallchute_e1_angle, corner_rad=.5) {
+	chute_outer_dx= sin(chute_outer_arc) * chute_rad;
+	chute_outer_dz= wallchute_cyl_z - cos(chute_outer_arc) * chute_rad;
+	chute_inner_dx= -sin(chute_inner_arc) * chute_rad;
+	chute_inner_dz= wallchute_cyl_z - cos(chute_inner_arc) * chute_rad;
+	wall_outer_dx= chute_outer_dx + sin(chute_outer_arc) * corner_rad;
+	wall_outer_dz= chute_outer_dz - cos(chute_outer_arc) * corner_rad;
+	wall_inner_dx= chute_inner_dx - sin(chute_inner_arc) * corner_rad;
+	wall_inner_dz= chute_inner_dz - cos(chute_inner_arc) * corner_rad;
+	$fn= 100;
+	translate([ chute_center_x, 0 ]) {
+		// outer wall
+		hull() {
+			translate([ wall_outer_dx, wall_outer_dz ]) circle(r=corner_rad);
+			translate([ wall_outer_dx, corner_rad ]) circle(r=corner_rad);
+		}
+		// inner
+		hull() {
+			translate([ wall_inner_dx, corner_rad ]) circle(r=corner_rad);
+			translate([ wall_inner_dx, wall_inner_dz ]) circle(r=corner_rad);
+			if (support_x) {
+				translate([ wall_inner_dx-support_x, corner_rad ]) circle(r=corner_rad);
+				translate([ wall_inner_dx-support_x, wall_inner_dz ]) circle(r=corner_rad);
+			}
+		}
+		difference() {
+			polygon([
+				[ chute_outer_dx, chute_outer_dz ], [ wall_outer_dx, 0 ],
+				[ wall_inner_dx, 0 ], [ chute_inner_dx, chute_inner_dz ]
+			]);
+			translate([ 0, wallchute_cyl_z ])
+				circle(r=chute_rad, $fn=360);
+		}
+	}
+}
+
+module wallchute_backing_outline() {
+	$fn=100;
+	hull() {
+		translate([ wallchute_e4_x, wallchute_e4_z ])
+			circle(r=wallchute_e4_r);
+		translate([ wallchute_e5_x, wallchute_e5_z ])
+			circle(r=wallchute_e5_r);
+		translate([ wallchute_e3_x, wallchute_e3_z ])
+			circle(r=wallchute_e3_r);
+		translate([ wallchute_e5_x, wallchute_e3_z ])
+			circle(r=wallchute_e5_r);
 	}
 }
 
@@ -318,7 +369,49 @@ module wallchute_straight_curve(arc=30, len=80) {
     wallchute_curve(arc=arc, anchor_at_0=false);
 }
 
+module wallchute_extend(radius=60) {
+	arc= acos(1-(wallchute_cyl2_x - wallchute_cyl_x)/radius/2);
+	step= arc/30;
+	base_len= 50;
+	rotate(-90, [0,1,0]) {
+		difference() {
+			rotate(90, [1,0,0]) translate([wallchute_cyl_x,0,0]) {
+				extrude(convexity=6) for(a=[0:step:arc+o], union=false) {
+					translate([radius,0,0]) rotate(a, [0,1,0]) translate([-radius,0,0])
+						wallchute_base_outline(chute_center_x=0, chute_inner_arc=90, support_x=wallchute_cyl2_x);
+				}
+				extrude(convexity=6) for(a=[0:step:arc+o], union=false) {
+					translate([radius,0,0]) rotate(arc, [0,1,0]) translate([-radius*2,0,0]) rotate(-a, [0,1,0]) translate([radius,0,0])
+						wallchute_base_outline(chute_center_x=0, chute_inner_arc=90, chute_outer_arc=60, support_x=19.2-19.1*a/arc);
+				}
+			}
+			translate([ -100, -100, -o ]) cube([ 100, 100+o, 100 ]);
+		}
+		difference() {
+			scale([ 1,1,1.5]) rotate(90, [1,0,0]) linear_extrude(height=base_len)
+				wallchute_backing_outline();
+			// cutouts for magnets
+			translate([ 0, -base_len+8, wallchute_face_dz/2 ]) wallchute_magslot();
+			translate([ 0, -base_len*.2, wallchute_face_dz/2 ]) wallchute_magslot();
+		}
+	}
+    // hold down corners
+	corner_anchor();
+	translate([ -wallchute_base_dx*1.5, 0 ]) corner_anchor();
+	translate([ 0, -base_len, 0 ]) corner_anchor();
+	translate([ -wallchute_base_dx*1.5, -base_len, 0 ]) scale([ 1,.8, 1]) corner_anchor();
+}
+
+module wallchute_loopback() {
+	translate([ 0, wallchute_cyl_z, (wallchute_cyl_x + wallchute_cyl2_x) / 2 ])
+		rotate(-90, [1,0,0]) rotate(90, [0,0,1]) {
+			rotate_extrude(angle=180) translate([ (wallchute_cyl2_x-wallchute_cyl_x)/2, 0 ]) circle(r=chute_rad);
+		}
+}
+
 //wallchute_curve();
-//wallchute_straight(len=160);
+//rotate(-90,[0,0,1]) wallchute_straight(len=10);
 //wallchute_wave(step=1);
-mirror([1,0,0]) wallchute_straight_curve();
+//wallchute_straight_curve();
+wallchute_extend();
+//translate([ -70, 0, 0 ]) wallchute_loopback();
