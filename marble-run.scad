@@ -425,17 +425,18 @@ module near_spiral_quarter(dz= (wallchute_cyl_z+chute_rad)/4, arc=90, radius=chu
 	}
 }
 
-module wallchute_loopback(dz= (wallchute_cyl_z+chute_rad)) {
+module wallchute_loopback(dz= (wallchute_cyl_z+chute_rad), with_support=true) {
 	entry_exit_len= 10;
 	back_y0= -chute_rad*2;
 	back_y1= entry_exit_len;
-	steps=10;
+	steps=1+ceil($fn/6);
 	difference() {
 		translate([ (wallchute_cyl2_x+wallchute_cyl_x)/2, 0 ]) {
 			// outer ramp into spiral
 			extrude(convexity=6) for(t=[0:1/steps:1+o], union=false) {
 				translate([ 0, (1-t) * entry_exit_len, dz*.9 + dz*.1 * cos(t*90) ]) rotate(90, [1,0,0])
-					wallchute_base_outline(chute_center_x=chute_rad, chute_inner_arc=60, chute_outer_arc=60, support_x=o+(1-t)*(1-t)*25);
+					wallchute_base_outline(chute_center_x=chute_rad, chute_inner_arc=60, chute_outer_arc=60,
+						support_x=(with_support? o+(1.1-t)*(1.1-t)*30 : 0));
 			}
 			// outer quarter spiral
 			translate([ 0, 0, dz*.5 ]) far_spiral_quarter(dz=dz*.4);
@@ -453,8 +454,8 @@ module wallchute_loopback(dz= (wallchute_cyl_z+chute_rad)) {
 		translate([ 0, back_y1 ]) scale([ 1,1,1.5]) rotate(90, [1,0,0]) linear_extrude(height=back_y1-back_y0)
 			wallchute_backing_outline();
 		// cutouts for magnets
-		translate([ 0, back_y0 + 5, wallchute_face_dz/2 ]) wallchute_magslot();
-		translate([ 0, back_y1 - 5, wallchute_face_dz/2 ]) wallchute_magslot();
+		translate([ 0, (back_y0+back_y1)/2, wallchute_face_dz/2 ]) wallchute_magslot();
+		//translate([ 0, back_y1 - 5, wallchute_face_dz/2 ]) wallchute_magslot();
 	}
 }
 
@@ -471,6 +472,6 @@ module wallchute_spiral(arc=360, radius=chute_rad) {
 //rotate(-90,[0,0,1]) wallchute_straight(len=10);
 //wallchute_wave(step=1);
 //wallchute_straight_curve();
-//wallchute_extend();
-wallchute_loopback($fn=40);
+//mirror([1,0,0]) wallchute_extend();
+wallchute_loopback($fn=20, with_support=false);
 //translate([ -70, 0, 0 ]) wallchute_loopback();
