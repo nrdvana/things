@@ -380,7 +380,7 @@ module wallchute_extend(radius=60) {
 					translate([radius,0,0]) rotate(a, [0,1,0]) translate([-radius,0,0])
 						wallchute_base_outline(chute_center_x=0, chute_inner_arc=90, support_x=wallchute_cyl2_x);
 				}
-				extrude(convexity=6) for(a=[0:step:arc+o], union=false) {
+				extrude(convexity=6) for(a=[-o:step:arc+o], union=false) {
 					translate([radius,0,0]) rotate(arc, [0,1,0]) translate([-radius*2,0,0]) rotate(-a, [0,1,0]) translate([radius,0,0])
 						wallchute_base_outline(chute_center_x=0, chute_inner_arc=90, chute_outer_arc=60, support_x=19.2-19.1*a/arc);
 				}
@@ -402,16 +402,75 @@ module wallchute_extend(radius=60) {
 	translate([ -wallchute_base_dx*1.5, -base_len, 0 ]) scale([ 1,.8, 1]) corner_anchor();
 }
 
-module wallchute_loopback() {
-	translate([ 0, wallchute_cyl_z, (wallchute_cyl_x + wallchute_cyl2_x) / 2 ])
-		rotate(-90, [1,0,0]) rotate(90, [0,0,1]) {
-			rotate_extrude(angle=180) translate([ (wallchute_cyl2_x-wallchute_cyl_x)/2, 0 ]) circle(r=chute_rad);
+module far_spiral_quarter(dz= (wallchute_cyl_z+chute_rad)/4, arc=90, radius=chute_rad) {
+	steps=ceil($fn/4);
+	extrude(convexity=6) for(a=[0:arc/steps:arc+o], union=false) {
+		translate([ 0, 0, a/90 * dz ]) rotate(90+a, [0,0,1]) translate([ -radius, 0 ]) 
+			rotate(90, [1,0,0]) {
+				translate([ 0, wallchute_cyl_z ]) rotate(-(1-a/arc)*20, [0,0,1]) translate([ 0, -wallchute_cyl_z ])
+				wallchute_base_outline(chute_center_x=0, chute_inner_arc=60, chute_outer_arc=60, support_x=o);
+			}
+	}
+}
+
+module near_spiral_quarter(dz= (wallchute_cyl_z+chute_rad)/4, arc=90, radius=chute_rad) {
+	steps=ceil($fn/4);
+	extrude(convexity=6) for(a=[0:(arc+o)/steps:arc+o+o], union=false) {
+		translate([ 0, 0, a/90 * dz ]) rotate(a, [0,0,1]) translate([ -radius, 0 ]) 
+			rotate(90, [1,0,0]) {
+				translate([ 0, wallchute_cyl_z ]) rotate(-a/arc*20, [0,0,1]) translate([ 0, -wallchute_cyl_z ])
+				wallchute_base_outline(chute_center_x=0, chute_inner_arc=60, chute_outer_arc=60,
+					support_x=o+(a < 20? radius : (sqrt(1 + sin(90-a)*sin(90-a))-1) * (radius+chute_rad+.6) ));
+			}
+	}
+}
+
+module wallchute_loopback(dz= (wallchute_cyl_z+chute_rad)) {
+	entry_exit_len= 10;
+	back_y0= -chute_rad*2;
+	back_y1= entry_exit_len;
+	steps=10;
+	difference() {
+		translate([ (wallchute_cyl2_x+wallchute_cyl_x)/2, 0 ]) {
+			// outer ramp into spiral
+			extrude(convexity=6) for(t=[0:1/steps:1+o], union=false) {
+				translate([ 0, (1-t) * entry_exit_len, dz*.9 + dz*.1 * cos(t*90) ]) rotate(90, [1,0,0])
+					wallchute_base_outline(chute_center_x=chute_rad, chute_inner_arc=60, chute_outer_arc=60, support_x=o+(1-t)*(1-t)*25);
+			}
+			// outer quarter spiral
+			translate([ 0, 0, dz*.5 ]) far_spiral_quarter(dz=dz*.4);
+			// inner quarter spiral
+			translate([ 0, 0, dz*.1 ]) near_spiral_quarter(dz=dz*.4);
+			// inner ramp out of spiral
+			extrude(convexity=6) for(t=[0:1/steps:1+o], union=false) {
+				translate([ 0, (1-t) * entry_exit_len, dz*.1 * (1-cos(t*90)) ]) rotate(90, [1,0,0])
+					wallchute_base_outline(chute_center_x=-chute_rad, chute_inner_arc=60, chute_outer_arc=60, support_x=2);
+			}
 		}
+		translate([ -100, -100, o ]) cube([100,200,100]);
+	}		
+	difference() {
+		translate([ 0, back_y1 ]) scale([ 1,1,1.5]) rotate(90, [1,0,0]) linear_extrude(height=back_y1-back_y0)
+			wallchute_backing_outline();
+		// cutouts for magnets
+		translate([ 0, back_y0 + 5, wallchute_face_dz/2 ]) wallchute_magslot();
+		translate([ 0, back_y1 - 5, wallchute_face_dz/2 ]) wallchute_magslot();
+	}
+}
+
+module wallchute_spiral(arc=360, radius=chute_rad) {
+	dz= wallchute_cyl_z+chute_rad;
+	step=30;
+	extrude(convexity=6) for(a=[0:step:arc+o], union=false) {
+		translate([ 0, 0, a/360 * dz ]) rotate(a, [0,0,1]) translate([ -radius, 0 ]) 
+			rotate(90, [1,0,0]) wallchute_base_outline(chute_center_x=0, chute_inner_arc=65, chute_outer_arc=60, support_x=2);
+	}
 }
 
 //wallchute_curve();
 //rotate(-90,[0,0,1]) wallchute_straight(len=10);
 //wallchute_wave(step=1);
 //wallchute_straight_curve();
-wallchute_extend();
+//wallchute_extend();
+wallchute_loopback($fn=40);
 //translate([ -70, 0, 0 ]) wallchute_loopback();
