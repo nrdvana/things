@@ -20,13 +20,13 @@ clip_latch_outer_rad= cap_rad_tip + (clip_latch_z1 / cap_slope);
 clip_inner_y=11.6;
 clip_catch_dx=9.7;
 clip_dx=14;
-clip_base_y=6;
-clip_angle=90-atan(cap_slope);
+clip_base_y=8;
+clip_angle=90-atan(cap_slope)+5;
 clip_reach_dy=9;
 clip_outer_y=11;
 clip_thick=.5;
 clip_wire_rad=1.5/2;
-clip_edge_angle=acos(cap_rad_outer/40);//30;
+clip_edge_angle=acos(cap_rad_outer/38);//30;
 spring_edge_x=-1;
 spring_edge_y=10;
 spring_edge_z=4.25;
@@ -104,7 +104,7 @@ module battery_cover() {
 	}
 	// edge contact
 	translate([spring_edge_x, spring_edge_y, cap_dz-o])
-		spring_base(r=spring_edge_r, base_dz=spring_edge_z-cap_dz, wall_arc2=230);
+		spring_base(r=spring_edge_r, base_dz=spring_edge_z-cap_dz, wall_arc1=180, wall_arc2=240);
 	// battery contacts.  First two are negative, last is positive.
 	for (a=[0:120:359]) {
 		r=(a < 240? spring_bat_neg_r : spring_bat_pos_r);
